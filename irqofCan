@@ -1,0 +1,546 @@
+/**
+  ******************************************************************************
+  * @file    Project/STM32F10x_StdPeriph_Template/stm32f10x_it.c 
+  * @author  MCD Application Team
+  * @version V3.5.0
+  * @date    08-April-2011
+  * @brief   Main Interrupt Service Routines.
+  *          This file provides template for all exceptions handler and 
+  *          peripherals interrupt service routine.
+  ******************************************************************************
+  * @attention
+  *
+  * THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
+  * WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE
+  * TIME. AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY
+  * DIRECT, INDIRECT OR CONSEQUENTI
+  
+  AL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING
+  * FROM THE CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE
+  * CODING INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
+  *
+  * <h2><center>&copy; COPYRIGHT 2011 STMicroelectronics</center></h2>
+  ******************************************************************************
+  */
+
+/* Includes ------------------------------------------------------------------*/
+#include "stm32f10x_it.h"
+#include "./usart/wyj_usart.h"
+#include "./can/wyj_can.h"
+#include "./resource/resource.h"
+
+extern void TimingDelay_Decrement(void);
+/** @addtogroup STM32F10x_StdPeriph_Template
+  * @{
+  */
+
+/* Private typedef -----------------------------------------------------------*/
+/* Private define ------------------------------------------------------------*/
+/* Private macro -------------------------------------------------------------*/
+/* Private variables ---------------------------------------------------------*/
+/* Private function prototypes -----------------------------------------------*/
+/* Private functions ---------------------------------------------------------*/
+
+/******************************************************************************/
+/*            Cortex-M3 Processor Exceptions Handlers                         */
+/******************************************************************************/
+
+/**
+  * @brief  This function handles NMI exception.
+  * @param  None
+  * @retval None
+  */
+void NMI_Handler(void)
+{
+}
+
+/**
+  * @brief  This function handles Hard Fault exception.
+  * @param  None
+  * @retval None
+  */
+void HardFault_Handler(void)
+{
+  /* Go to infinite loop when Hard Fault exception occurs */
+  while (1)
+  {
+  }
+}
+
+/**
+  * @brief  This function handles Memory Manage exception.
+  * @param  None
+  * @retval None
+  */
+void MemManage_Handler(void)
+{
+  /* Go to infinite loop when Memory Manage exception occurs */
+  while (1)
+  {
+  }
+}
+
+/**
+  * @brief  This function handles Bus Fault exception.
+  * @param  None
+  * @retval None
+  */
+void BusFault_Handler(void)
+{
+  /* Go to infinite loop when Bus Fault exception occurs */
+  while (1)
+  {
+  }
+}
+
+/**
+  * @brief  This function handles Usage Fault exception.
+  * @param  None
+  * @retval None
+  */
+void UsageFault_Handler(void)
+{
+  /* Go to infinite loop when Usage Fault exception occurs */
+  while (1)
+  {
+  }
+}
+
+/**
+  * @brief  This function handles SVCall exception.
+  * @param  None
+  * @retval None
+  */
+void SVC_Handler(void)
+{
+}
+
+/**
+  * @brief  This function handles Debug Monitor exception.
+  * @param  None
+  * @retval None
+  */
+void DebugMon_Handler(void)
+{
+}
+
+/**
+  * @brief  This function handles PendSVC exception.
+  * @param  None
+  * @retval None
+  */
+void PendSV_Handler(void)
+{
+}
+
+
+void SysTick_Handler(void)
+{
+	TimingDelay_Decrement();	
+}
+
+
+
+
+//int USART1_Data_Copy[10] = {0};  //USART1ÁãÊ±Êý¾Ý
+
+extern u8 rev_buf[100];//½ÓÊÕ»º³åÇø
+u8 addr=0;     //µØÖ·Æ«ÒÆÁ¿
+u8 revice_ok=0;//½ÓÊÕÍê³É±êÖ¾
+/*USART1ÖÐ¶Ï·þÎñº¯Êý*/
+u8 flag_irq1 = 0;//the jumping flag of irq1
+extern u8 flagCurrentTestingState;
+void USART3_IRQHandler(void)
+{
+  u8 data;
+	
+	if(USART3->SR&(1<<5))//½ÓÊÕµ½Êý¾Ý
+	{
+		data=USART3->DR;
+		
+		switch(flag_irq1)
+		{
+			case 0:
+				flag_irq1 = data == 0xaa ? 1 : 0;
+				break;
+			case 1:
+				
+				flag_irq1 = data == 0x01 ? 2 : 0;//set running state
+			if(flag_irq1)
+				break;
+				flag_irq1 = data == 0x02 ? 20 : 0;//set the standard 
+			
+				break;
+			case 2:
+				rev_buf[0] = data;
+			flag_irq1  = 3;
+				break;
+			case 3:
+				flag_irq1 = data == 0x0d ? 4 : 0;//set running state
+			if(!flag_irq1)
+				break;
+				switch(rev_buf[0])
+				{
+					case 0://fobid
+						flagCurrentTestingState = 0;
+						break;
+					case 1://init
+						flagCurrentTestingState = 1;
+						break;
+					case 2://begin
+						flagCurrentTestingState = 2;
+						break;
+				}
+				flag_irq1 = 0;
+				break;
+					case 20: case 21:case 22:case 23:
+					rev_buf[flag_irq1] = data;
+					flag_irq1 ++;
+					break;
+					case 24:
+						if(data == 0x0d)
+						flagCurrentTestingState = 3;
+						flag_irq1 = 0;
+							
+						break;
+		}
+	}
+}
+ 
+
+void USART1_IRQHandler(void)
+{
+  u8 data;
+	
+	if(USART1->SR&(1<<5))//½ÓÊÕµ½Êý¾Ý
+	{
+		data=USART1->DR;
+		
+		switch(flag_irq1)
+		{
+			case 0:
+				flag_irq1 = data == 0xaa ? 1 : 0;
+				break;
+			case 1:
+				
+				flag_irq1 = data == 0x01 ? 2 : 0;//set running state
+			if(flag_irq1)
+				break;
+				flag_irq1 = data == 0x02 ? 20 : 0;//set the standard 
+			
+				break;
+			case 2:
+				rev_buf[0] = data;
+			flag_irq1  = 3;
+				break;
+			case 3:
+				flag_irq1 = data == 0x0d ? 4 : 0;//set running state
+			if(!flag_irq1)
+				break;
+				switch(rev_buf[0])
+				{
+					case 0://fobid
+						flagCurrentTestingState = 0;
+						break;
+					case 1://init
+						flagCurrentTestingState = 1;
+						break;
+					case 2://begin
+						flagCurrentTestingState = 2;
+						break;
+				}
+				flag_irq1 = 0;
+				break;
+					case 20: case 21:case 22:case 23:
+					rev_buf[flag_irq1 - 20] = data;
+					flag_irq1 ++;
+					break;
+					case 24:
+						if(data == 0x0d)
+						flagCurrentTestingState = 3;
+						flag_irq1 = 0;
+							
+						break;
+		}
+	}
+}
+ 
+
+int USART2_Data_Copy[20] = {0};  //USART2ÁãÊ±Êý¾Ý
+
+extern Car_Main_Variate cmv;
+extern u8 flag_shutup;
+extern u8 idSave[];
+extern u8 wantReply;
+u8 checkLenght;//ÔËËã³µÅÆÊ¶±ð³¤¶È
+/*USART2ÖÐ¶Ï·þÎñº¯Êý*/
+void USART2_IRQHandler(void)
+{
+	u8 data;
+	
+	if(USART2->SR&(1<<5))//½ÓÊÕµ½Êý¾Ý
+	{
+		data = USART2->DR;
+		//Usart_SendByte(USART1, data);
+		switch(USART2_Data_Copy[0])
+		{
+			case 0:
+			{
+				if(data == 'Y')
+					USART2_Data_Copy[0] = 100;
+				else if(data == 'F')
+					USART2_Data_Copy[0] = 200;
+				else if(data == 'G')
+					USART2_Data_Copy[0] = 300;
+				else
+					USART2_Data_Copy[0] = 0;
+			}break;
+			
+			
+			case 100:  USART2_Data_Copy[0] = (data == 'H') ? 101 : 0;  break;
+			case 101:
+			{
+				if(data == '0') {  //²éÑ¯Á¬½Ó(ÐÂ°æ³µÅÆÊ¶±ðÊ¹ÓÃ´ËÍ¨Ñ¶Ð­Òé)
+					
+					USART2_Data_Copy[0] = 130;
+					idSave[0] = 0;
+					flag_shutup = 1;
+					checkLenght = 0;
+					wantReply = 0;
+				}
+				else if(data == '2') {  //²éÑ¯³µÅÆ
+					USART2_Data_Copy[0] = 0;
+				}
+				else if(data == '1') {  //ÊÇ·ñÄÜÖ§¸¶
+					USART2_Data_Copy[0] = 121;
+				}
+				else if(data == '3') {  //³µÅÆÒÑ¾­¼ì²â³É¹¦
+					flag_shutup= 0; //¿ÉÒÔ½²»°
+					USART2_Data_Copy[0] = 0;
+				}
+				else
+					USART2_Data_Copy[0] = 0;
+			}break;
+			
+			case 130:
+				if(data == '_' && idSave[0] == 0)//»Ø¸´³µÅÆÐÅÏ¢
+				{
+					USART2_Data_Copy[0] ++;
+					break;
+				}
+				else//¼ÇÂ¼id
+				{
+				idSave[idSave[0] + 1] = data;
+					
+					if(data == '_')
+					{
+				idSave[idSave[0] + 1] = 0;
+						USART2_Data_Copy[0] = 0;
+					}
+						
+				}
+				idSave[0] ++;
+				if(idSave[0] == 20)
+					USART2_Data_Copy[0] = 0;
+				break;
+			case 131:
+				if(data == '_')
+				{
+					//idSave[idSave[0] + 1] = 0;
+					USART2_Data_Copy[0] = 0;
+					wantReply = 1;
+				}
+				if(checkLenght == 10)
+					USART2_Data_Copy[0] = 0;
+				checkLenght ++;
+				 break;
+			case 121:
+			{
+				cmv.pay_flag_ID[cmv.pay_flag_ID[0]+2] = data;
+				cmv.pay_flag_ID[0]++;
+				
+				if(data == '_') {  //½áÊø·û
+					cmv.pay_flag_ID[cmv.pay_flag_ID[0]+1] = 0;
+					cmv.pay_flag_ID[1] = cmv.pay_flag_ID[0];  //´æ´¢Êý¾Ý³¤¶È
+					cmv.pay_flag = 1;
+					cmv.pay_flag_ID[0] = 0;
+					
+					USART2_Data_Copy[0] = 0;
+				}
+				else if(cmv.pay_flag_ID[0] > 48) {  //Êý¾Ý´íÎó
+					cmv.pay_flag_ID[0] = 0;
+					
+					USART2_Data_Copy[0] = 0;
+				}
+			}break;
+			
+/*-----------------------------------±¾ÈË·¢ÏûÏ¢ÊÕµ½µÄ»Ø¸´----------------------------------------------------*/
+			
+			case 200:  USART2_Data_Copy[0] = (data == 'S') ? 201 :0;  break;
+			case 201:
+			{
+				if(data == '0') {  //¿ª»ú×¢²á
+					if(cmv.car_register[1]) {
+						cmv.car_register[1] = 0;
+						cmv.car_register[0] = 1;
+					}
+					
+					USART2_Data_Copy[0] = 0;
+				}
+				else if(data == '1') {  //¹ÊÕÏ
+					if(cmv.trouble[0]) {
+						cmv.trouble[0] = 0;
+						cmv.trouble[1] = 1;
+					}
+					
+					USART2_Data_Copy[0] = 0;
+				}
+				else if(data == '2') {  //Ö§¸¶È·ÈÏ
+					USART2_Data_Copy[0] = 221;
+				}
+				else if(data == '3') {  //»úÆ÷ÄÜ·ñ¸´Î»
+					USART2_Data_Copy[0] = 231;
+				}
+				else if(data == '4'){//³õÊ¼»¯ÔËÓªÑ¯ÎÊ
+					
+					USART2_Data_Copy[0] = 241;
+				}
+				else
+					USART2_Data_Copy[0] = 0;
+			}break;
+			
+			
+			case 221:  cmv.payment_message[0] = data;  USART2_Data_Copy[0] = 222;  break;
+			case 222:  cmv.payment_message[1] = data;  USART2_Data_Copy[0] = 223;  break;
+			case 223:  cmv.payment_message[2] = data;  USART2_Data_Copy[0] = 224;  break;
+			case 224:
+			{
+				cmv.payment_message[3] = data;
+				
+				if(cmv.car_payment_flag[1]) {
+					cmv.car_payment_flag[1] = 0;
+					cmv.car_payment_flag[0] = 1;
+				}
+				
+				USART2_Data_Copy[0] = 0;
+			}break;
+			
+			
+			case 231:
+			{
+				if(cmv.car_rest_flag[1])
+				{
+					cmv.car_rest_flag[1] = 0;
+					if(data == '1')
+						cmv.car_rest_flag[0] = 1;
+				}
+				
+				USART2_Data_Copy[0] = 0;
+			}break;
+			case 241:
+			{
+				
+				if(data == '1')
+				  cmv.run_service[1] = 1;
+				else if(data == '0')
+					cmv.run_service[1] = 2;
+				USART2_Data_Copy[0] = 0;
+				cmv.car_register[0] = 1;//×¢²áÍê³É
+			}
+				break;
+			
+/*-------------------------------------¹ÜÀí¶Ë¿ØÖÆ------------------------------------------------------*/
+			
+			case 300:  USART2_Data_Copy[0] = (data == 'L') ? 301 :0;  break;
+			case 301:
+			{
+				if(data == '0') {  //ÈýÌ¬°´Å¥
+					USART2_Data_Copy[0] = 302;
+				}
+				else if(data == '1') {  //ÔËÓªÐÅÏ¢
+					USART2_Data_Copy[0] = 311;
+				}
+				else if(data == '2') {  //Ï´³µ»ú×´Ì¬
+					cmv.car_state = 1;
+					USART2_Data_Copy[0] = 0;
+				}
+				else
+					USART2_Data_Copy[0] = 0;
+			}break;
+			
+			
+			case 302:
+			{
+				cmv.ONOFF[0] = 1;
+				
+				if(data == '0')
+					cmv.ONOFF[1] = 0;
+				else if(data == '1')
+					cmv.ONOFF[1] = 1;
+				else if(data == '2')
+					cmv.ONOFF[1] = 2;
+				
+				USART2_Data_Copy[0] = 0;
+			}break;
+			
+			
+			case 311:
+			{
+				if(data == '1')
+				  cmv.run_service[1] = 1;
+				else if(data == '0')
+					cmv.run_service[1] = 2;
+				
+				USART2_Data_Copy[0] = 0;
+			}break;
+			
+/*--------------------------------------------------------------------------------------------------------*/
+			
+			default:  USART2_Data_Copy[0] = 0;  break;
+	  }
+  }
+}
+
+
+//can×ÜÏß
+void USB_LP_CAN1_RX0_IRQHandler(void)
+{
+	u8 i, res;
+	CanRxMsg RxMessage;
+
+	Init_RxMes(&RxMessage);  //Çå¿Õ»º³åÇø
+	CAN_Receive(CAN1, CAN_FIFO0, &RxMessage);  //´ÓÓÊÏäÖÐ¶Á³ö±¨ÎÄ
+	if(RxMessage.StdId == 0x100 + Switch_4pin)
+		ResetGlobalBuffer = 1;
+	if(RxMessage.StdId != 0x110 + Switch_4pin)
+		return;
+	for(i = 0; i < RxMessage.DLC; i ++)
+	{
+ 
+		res = RxMessage.Data[i];
+		CountPlace = *(int*)&RxMessage.Data[0];
+	}
+}
+
+/******************************************************************************/
+/*                 STM32F10x Peripherals Interrupt Handlers                   */
+/*  Add here the Interrupt Handler for the used peripheral(s) (PPP), for the  */
+/*  available peripheral interrupt handler's name please refer to the startup */
+/*  file (startup_stm32f10x_xx.s).                                            */
+/******************************************************************************/
+
+/**
+  * @brief  This function handles PPP interrupt request.
+  * @param  None
+  * @retval None
+  */
+/*void PPP_IRQHandler(void)
+{
+}*/
+
+/**
+  * @}
+  */ 
+
+
+/******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
